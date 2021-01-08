@@ -8,6 +8,12 @@
 
 import Foundation
 
+extension Dictionary where Value: Equatable {
+    func someKey(forValue val: Value) -> Key? {
+        return first(where: { $1 == val })?.key
+    }
+}
+
 // ISO 3166-1 alpha-2 two-letter country codes.
 let isoToDigitCountryCodeDictionary: [String: String] = [
     "AX": "352",

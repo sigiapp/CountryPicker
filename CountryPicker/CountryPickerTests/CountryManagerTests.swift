@@ -12,6 +12,16 @@ import XCTest
 class CountryPickerTests: XCTestCase {
     var countryManager: CountryManager!
     
+    var validCountryFilePath: String? {
+        let bundle = Bundle(for: CountryManager.self)
+        return bundle.path(forResource: "CountryPickerController.bundle/countries", ofType: "plist")
+    }
+    
+    var invalidCountryFilePath: String? {
+        let bundle = Bundle(for: CountryManager.self)
+        return bundle.path(forResource: "CountryPickerController.bundle/countriess", ofType: "plist")
+    }
+    
     override func setUp() {
         super.setUp()
         countryManager = CountryManager.shared
@@ -23,12 +33,9 @@ class CountryPickerTests: XCTestCase {
     }
     
     func test_afterloadMethod_countriesShoulLoadCorrectly() {
-        
         XCTAssertFalse(countryManager.countries.isEmpty)
         XCTAssert(countryManager.allCountries([]).count != 0, "Cann't load countries")
-        XCTAssertNil(countryManager.lastCountrySelected)
         XCTAssertEqual(countryManager.defaultFilter, .countryName)
-       
     }
     
     func test_currentCountryCode() {
@@ -55,10 +62,11 @@ class CountryPickerTests: XCTestCase {
     
     
     func test_addFilter_shouldAbleToInsertFilter() {
-        XCTAssertEqual(countryManager.filters, [.countryName])
+        countryManager.addFilter(.countryName)
+        XCTAssertTrue(countryManager.filters.contains(.countryName))
         countryManager.addFilter(.countryDialCode)
-        
-        XCTAssertEqual(countryManager.filters, [.countryName, .countryDialCode])
+        XCTAssertTrue(countryManager.filters.contains(.countryDialCode))
+        XCTAssertTrue(countryManager.filters.contains(.countryName))
     }
     
     func test_removeFilter_shouldAbleToRemoveFilter() {
@@ -79,6 +87,36 @@ class CountryPickerTests: XCTestCase {
         XCTAssertEqual(countryManager.country(withName: "India"), country)
         XCTAssertEqual(countryManager.country(withDigitCode: "+91"), country)
         XCTAssertNil(countryManager.country(withDigitCode: "+3232"))
+    }
+    
+    func test_countryLoading_withValidPath() {
+        let urlPath = URL(fileURLWithPath: validCountryFilePath ?? "")
+        let countries = try? countryManager.fetchCountries(fromURLPath: urlPath)
+        XCTAssertNotNil(countries)
+        XCTAssertEqual(countries?.count, 250)
+    }
+    
+    func test_countryLoading_withInvalidPath() {
+        let urlPath = URL(fileURLWithPath: invalidCountryFilePath ?? "")
+        let countries = try? countryManager.fetchCountries(fromURLPath: urlPath)
+        XCTAssertNil(countries)
+        XCTAssertEqual(countries?.count, nil)
+    }
+    
+    func test_lastCountrySelected() {
+        
+        let countrySelected = countryManager.country(withCode: "TZ")
+        countryManager.lastCountrySelected = countrySelected
+        XCTAssertEqual(countryManager.lastCountrySelected?.countryCode, countrySelected?.countryCode)
+    }
+    
+    func test_resetLastCountrySelected() {
+        let countrySelected = countryManager.country(withCode: "TZ")
+        countryManager.lastCountrySelected = countrySelected
+        XCTAssertEqual(countryManager.lastCountrySelected?.countryCode, countrySelected?.countryCode)
+        
+        countryManager.resetLastSelectedCountry()
+        XCTAssertNil(countryManager.lastCountrySelected)
     }
     
     func testPerformanceLoadAndSortCountries() {
